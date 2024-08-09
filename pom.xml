@@ -38,7 +38,6 @@
 
   <build>
     <plugins>
-      <!-- Maven Compiler Plugin -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
@@ -49,7 +48,6 @@
         </configuration>
       </plugin>
 
-      <!-- Maven JAR Plugin -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
@@ -57,13 +55,12 @@
         <configuration>
           <archive>
             <manifestEntries>
-              <Main-Class>App</Main-Class> <!-- Укажите правильное имя основного класса -->
+              <Main-Class>App</Main-Class>
             </manifestEntries>
           </archive>
         </configuration>
       </plugin>
 
-      <!-- Maven Shade Plugin -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>

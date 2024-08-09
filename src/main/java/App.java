@@ -1,3 +1,4 @@
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -23,13 +24,13 @@ public class App {
 
         logger.info("Reading the file {}", filePath);
 
-        Set<Long[]> copyOfMainSet = FileManager.readFile(filePath, pattern);
+        Set<String[]> copyOfMainSet = FileManager.readFile(filePath, pattern);
         if (!copyOfMainSet.isEmpty()) {
-            Set<Map<Long, Set<Long[]>>> result = DataGrouper.groupBySimilarElements(copyOfMainSet);
-            int numberOfGroups = DataGrouper.countTotalGroups(result);
-            FileManager.writeFile(result, numberOfGroups);
+            List<Set<String[]>> groups = DataGrouper.groupStrings(copyOfMainSet);
+            int numberOfGroups = groups.size();
+            FileManager.writeFile(groups, numberOfGroups);
         } else {
-            logger.info("There is no correct data in the file or it is empty");
+            logger.error("There is no correct data in the file or it is empty");
         }
 
         long endTime = System.currentTimeMillis();

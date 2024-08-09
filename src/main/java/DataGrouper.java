@@ -1,71 +1,91 @@
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.LongStream;
 
 public class DataGrouper {
+    static class UnionFind {
+        private final Map<String, String> parent = new HashMap<>();
+        private final Map<String, Integer> rank = new HashMap<>();
 
-    private static int getMaxNumberOfColumns(Set<Long[]> data) {
-        return data.stream()
-                .mapToInt(arr -> arr.length)
-                .max()
-                .orElse(0);
-    }
-    private static long[] extractKeyValues(Set<Long[]> data, int size) {
-        return data.stream()
-                .flatMapToLong(arr -> LongStream.of(
-                        Arrays.stream(arr)
-                                .skip(size - 1)
-                                .findFirst()
-                                .orElse(0L)))
-                .toArray();
-    }
+        public String find(String s) {
+            parent.putIfAbsent(s, s);
+            if (!s.equals(parent.get(s))) {
+                parent.put(s, find(parent.get(s)));
+            }
+            return parent.get(s);
+        }
 
-    private static Set<Long> findDuplicateElements(long[] result) {
-        Set<Long> duplicateValues = new HashSet<>();
-        Set<Long> seenValues = new HashSet<>();
-        for (long value : result) {
-            if (value != 0 && !seenValues.add(value)) {
-                duplicateValues.add(value);
+        public void union(String s1, String s2) {
+            String root1 = find(s1);
+            String root2 = find(s2);
+
+            if (!root1.equals(root2)) {
+                int rank1 = rank.getOrDefault(root1, 0);
+                int rank2 = rank.getOrDefault(root2, 0);
+
+                if (rank1 > rank2) {
+                    parent.put(root2, root1);
+                } else if (rank1 < rank2) {
+                    parent.put(root1, root2);
+                } else {
+                    parent.put(root1, root2);
+                    rank.put(root2, rank2 + 1);
+                }
             }
         }
-        return duplicateValues;
+
+        public Map<String, Set<String[]>> groupMembers(Set<String[]> data) {
+            Map<String, Set<String[]>> groups = new HashMap<>();
+            for (String[] row : data) {
+                String root = find(Arrays.toString(row));
+                groups.computeIfAbsent(root, k -> new HashSet<>()).add(row);
+            }
+            return groups;
+        }
     }
 
-    private static Map<Long, Set<Long[]>> groupDataByMatches(Set<Long[]> data, Set<Long> duplicateValues, int size) {
-        return data.stream()
-                .filter(arr -> Arrays.stream(arr)
-                        .skip(size - 1)
-                        .limit(1)
-                        .anyMatch(duplicateValues::contains))
-                .collect(Collectors.groupingBy(
-                        arr -> Arrays.stream(arr)
-                                .skip(size - 1)
-                                .limit(1)
-                                .findFirst()
-                                .orElse(0L),
-                        Collectors.toSet()
-                ));
-    }
+    public static List<Set<String[]>> groupStrings(Set<String[]> data) {
+        int maxColumns = data.stream().mapToInt(row -> row.length).max().orElse(0);
+        UnionFind uf = new UnionFind();
 
-    public static Set<Map<Long, Set<Long[]>>> groupBySimilarElements(Set<Long[]> data) {
-        int maxElements = getMaxNumberOfColumns(data);
-        Set<Map<Long, Set<Long[]>>> result = new LinkedHashSet<>();
+        for (int col = 0; col < maxColumns; col++) {
+            Map<String, List<String[]>> columnToRowsMap = new HashMap<>();
+            for (String[] row : data) {
+                if (col < row.length && !row[col].isEmpty()) {
+                    columnToRowsMap.computeIfAbsent(row[col], k -> new ArrayList<>()).add(row);
+                }
+            }
 
-        for (int size = 1; size <= maxElements; size++) {
-            long[] seenValues = extractKeyValues(data, size);
-            Set<Long> duplicateValues = findDuplicateElements(seenValues);
-            Map<Long, Set<Long[]>> rowsWithMatches = groupDataByMatches(data, duplicateValues, size);
+            for (List<String[]> rows : columnToRowsMap.values()) {
+                for (int i = 1; i < rows.size(); i++) {
+                    String[] row1 = rows.get(0);
+                    String[] row2 = rows.get(i);
 
-            if (!rowsWithMatches.isEmpty()) {
-                result.add(rowsWithMatches);
+                    boolean match = false;
+
+                    for (int colIndex = 0; colIndex < Math.min(row1.length, row2.length); colIndex++) {
+                        if (!row1[colIndex].isEmpty() && !row2[colIndex].isEmpty() && row1[colIndex].equals(row2[colIndex])) {
+                            match = true;
+                            break;
+                        }
+                    }
+
+                    if (match) {
+                        uf.union(Arrays.toString(row1), Arrays.toString(row2));
+                    }
+                }
             }
         }
-        return result;
+
+        Map<String, Set<String[]>> groupedRows = uf.groupMembers(data);
+
+        groupedRows.entrySet().removeIf(entry -> entry.getValue().stream()
+                .allMatch(row -> Arrays.stream(row).allMatch(String::isEmpty)));
+
+        groupedRows.entrySet().removeIf(entry -> entry.getValue().size() < 2);
+
+        List<Set<String[]>> sortedGroups = new ArrayList<>(groupedRows.values());
+        sortedGroups.sort((g1, g2) -> Integer.compare(g2.size(), g1.size()));
+
+        return sortedGroups;
     }
 
-    static int countTotalGroups(Set<Map<Long, Set<Long[]>>> results) {
-        return results.stream()
-                .mapToInt(Map::size)
-                .sum();
-    }
 }

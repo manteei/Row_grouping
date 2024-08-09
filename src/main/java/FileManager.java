@@ -16,30 +16,25 @@ import java.util.stream.Collectors;
 public class FileManager {
     private static final Logger logger = LogManager.getLogger(FileManager.class);
 
-    public static Set<Long[]> readFile(String filePath, Pattern pattern) {
-        Set<Long[]> longSet;
+    public static Set<String[]> readFile(String filePath, Pattern pattern) {
+        Set<String[]> stringSet;
         try (BufferedReader reader = Files.newBufferedReader(Paths.get(filePath))) {
-            longSet = reader.lines()
+            stringSet = reader.lines()
                     .filter(s -> pattern.matcher(s).matches())
                     .filter(s -> (s.length() > 2))
                     .distinct()
-                    .map(s -> s.replace("\"\"", "0"))
                     .map(s -> s.replace("\"", ""))
                     .map(s -> s.split(";"))
-                    .map(parts -> Arrays.stream(parts)
-                            .map(Long::valueOf)
-                            .toArray(Long[]::new))
                     .collect(Collectors.toSet());
         } catch (IOException e) {
-            logger.error("Error reading file or invalid path");
-            longSet = Collections.emptySet();
+           logger.error("Error reading file or invalid path");
+            stringSet = Collections.emptySet();
         }
         logger.info("File processed");
-        return longSet;
+        return stringSet;
     }
 
-    public static void writeFile(Set<Map<Long, Set<Long[]>>> result, int numberOfGroups) {
-
+    public static void writeFile(List<Set<String[]>> groups, int numberOfGroups) {
         LocalDateTime now = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH.mm");
         String formattedTime = now.format(formatter);
@@ -47,21 +42,21 @@ public class FileManager {
         Path outputPath = Path.of(newFileName);
 
         try (BufferedWriter writer = Files.newBufferedWriter(outputPath)) {
-            writer.write("Total found: " + numberOfGroups+ " groups");
+            writer.write("Всего найдено: " + numberOfGroups + " групп");
             writer.newLine();
+
             int groupCounter = 1;
-            for (Map<Long, Set<Long[]>> map : result) {
-                for (Map.Entry<Long, Set<Long[]>> entry : map.entrySet()) {
-                    writer.write("Группа " + groupCounter);
+            for (Set<String[]> group : groups) {
+                writer.write("Группа " + groupCounter);
+                writer.newLine();
+                groupCounter++;
+                for (String[] array : group) {
+                    writer.write(String.join(";", array));
                     writer.newLine();
-                    groupCounter++;
-                    for (Long[] array : entry.getValue()) {
-                        writer.write(Arrays.toString(array));
-                        writer.newLine();
-                    }
                 }
             }
-            logger.info("The result is written to a file {}", newFileName);
+
+            logger.info("The result is written to a file " + newFileName);
         } catch (IOException e) {
             logger.error("Error writing to file");
         }
