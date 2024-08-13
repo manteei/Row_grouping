@@ -21,18 +21,29 @@ public class FileManager {
         try (BufferedReader reader = Files.newBufferedReader(Paths.get(filePath))) {
             stringSet = reader.lines()
                     .filter(s -> pattern.matcher(s).matches())
-                    .filter(s -> (s.length() > 2))
                     .distinct()
-                    .map(s -> s.replace("\"", ""))
-                    .map(s -> s.split(";"))
+                    .map(s -> {
+                        // Удаление двойных кавычек
+                        s = s.replace("\"\"", "");
+                        // Разделение строки на части
+                        String[] parts = s.split(";");
+                        // Замена пустых значений и приведение к нужному формату
+                        for (int i = 0; i < parts.length; i++) {
+                            if (parts[i] == null || parts[i].trim().isEmpty()) {
+                                parts[i] = ""; // Заменить пустые и null значения на пустую строку
+                            }
+                        }
+                        return parts;
+                    })
                     .collect(Collectors.toSet());
         } catch (IOException e) {
-           logger.error("Error reading file or invalid path");
+            logger.error("Error reading file or invalid path");
             stringSet = Collections.emptySet();
         }
         logger.info("File processed");
         return stringSet;
     }
+
 
     public static void writeFile(List<Set<String[]>> groups, int numberOfGroups) {
         LocalDateTime now = LocalDateTime.now();

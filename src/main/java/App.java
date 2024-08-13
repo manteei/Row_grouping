@@ -9,7 +9,8 @@ public class App {
 
     static String filePath;
     private static final Logger logger = LogManager.getLogger(App.class);
-    static final String regex = "^(\"\\d*\")(;\"\\d*\")*$";
+    static final String regex = "^(\\\"[^\\\"]*\\\"|;)*$";
+
     static final Pattern pattern = Pattern.compile(regex);
 
     public static void main(String[] args) {
