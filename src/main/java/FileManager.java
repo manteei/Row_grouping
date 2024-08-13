@@ -23,14 +23,11 @@ public class FileManager {
                     .filter(s -> pattern.matcher(s).matches())
                     .distinct()
                     .map(s -> {
-                        // Удаление двойных кавычек
                         s = s.replace("\"\"", "");
-                        // Разделение строки на части
                         String[] parts = s.split(";");
-                        // Замена пустых значений и приведение к нужному формату
                         for (int i = 0; i < parts.length; i++) {
                             if (parts[i] == null || parts[i].trim().isEmpty()) {
-                                parts[i] = ""; // Заменить пустые и null значения на пустую строку
+                                parts[i] = "";
                             }
                         }
                         return parts;
